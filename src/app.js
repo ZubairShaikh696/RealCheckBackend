@@ -1,7 +1,8 @@
 const express = require("express");
 const userRoutes = require("./routes/user.routes");
-const errorHandler = require("./middleware/error.middleware");
 const authRoutes = require("./routes/auth.routes");
+const scanRoutes = require("./routes/scanRoutes");
+const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
 
@@ -14,11 +15,10 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/scan", scanRoutes);
 
-// Error middleware (LAST)
 app.use(errorHandler);
 
 module.exports = app;
