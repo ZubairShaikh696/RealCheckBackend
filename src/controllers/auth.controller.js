@@ -58,20 +58,31 @@ exports.login = asyncHandler(async (req, res) => {
       message: "Invalid credentials",
     });
   }
+const accessToken = jwt.sign(
+  { userId: user._id },
+  process.env.JWT_SECRET,
+  { expiresIn: "15m" }
+);
 
-  const token = jwt.sign(
-    {
-      userId: user._id,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "7d",
-    }
-  );
+const refreshToken = jwt.sign(
+  { userId: user._id },
+  process.env.REFRESH_SECRET,
+  { expiresIn: "7d" }
+);
+  // const token = jwt.sign(
+  //   {
+  //     userId: user._id,
+  //   },
+  //   process.env.JWT_SECRET,
+  //   {
+  //     expiresIn: "7d",
+  //   }
+  // );
 
   res.json({
     success: true,
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user._id,
       name: user.name,

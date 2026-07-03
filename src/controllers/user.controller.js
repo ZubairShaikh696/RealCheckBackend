@@ -61,3 +61,36 @@ exports.deleteUser = asyncHandler(async (req, res) => {
 
   sendResponse(res, 200, null, "User deleted");
 });
+
+exports.refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "No token" });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_SECRET
+    );
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    const newAccessToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.json({
+      accessToken: newAccessToken,
+    });
+  } catch (error) {
+    res.status(403).json({ message: "Invalid refresh token" });
+  }
+};

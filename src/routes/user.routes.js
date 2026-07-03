@@ -8,6 +8,7 @@ const {
   getUserById,
   updateUser,
   deleteUser,
+  refreshToken,
 } = require("../controllers/user.controller");
 
 router.post("/", createUser);
@@ -15,5 +16,5 @@ router.get("/", getUsers);
 router.get("/:id", getUserById);
 router.put("/:id", updateUser);
 router.delete("/:id", deleteUser);
-
+router.post("/refresh", refreshToken);
 module.exports = router;

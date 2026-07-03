@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  },
+  {
+    refreshToken: String
   }
 );
 
