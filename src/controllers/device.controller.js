@@ -3,25 +3,36 @@ const Device = require("../models/Device");
 const registerDevice = async (req, res) => {
   try {
     const {
-      deviceId,
+      device_id,
+      device_name,
       platform,
-      appVersion,
-      buildNumber,
-    } = req.body;
+      os_version,
+      app_version,
+      build_number
+  } = req.body;
 
-    if (!deviceId || !platform) {
+  if (
+    !device_id
+) {
+    return res.status(400).json({
+        success: false,
+        message: "Required fields are missing"
+    });
+}
+
+    if (!device_id || !platform) {
       return res.status(400).json({
         success: false,
-        message: "deviceId and platform are required",
+        message: "device_id and platform are required",
       });
     }
 
-    let device = await Device.findOne({ deviceId });
+    let device = await Device.findOne({ device_id });
 
     if (device) {
       device.lastActiveAt = new Date();
-      device.appVersion = appVersion;
-      device.buildNumber = buildNumber;
+      device.appVersion = app_version;
+      device.buildNumber = build_number;
 
       await device.save();
 
@@ -33,10 +44,12 @@ const registerDevice = async (req, res) => {
     }
 
     device = await Device.create({
-      deviceId,
+      device_id,
       platform,
-      appVersion,
-      buildNumber,
+      app_version,
+      build_number,
+      os_version,
+      device_name
     });
 
     return res.status(201).json({
