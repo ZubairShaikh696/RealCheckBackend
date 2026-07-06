@@ -64,20 +64,59 @@ if (device_id) {
     }
   );
 }
-  // Merge guest history into registered user
-  if (device_id) {
-    await ScanHistory.updateMany(
-      {
-        device_id,
-        user: null,
-      },
-      {
-        $set: {
-          user: user._id,
-        },
+  // =======================================================
+// Merge guest history into logged-in user
+// =======================================================
+
+if (device_id) {
+
+  const guestHistory = await ScanHistory.find({
+    device_id,
+    user: null,
+  });
+
+  for (const guest of guestHistory) {
+
+    const existingHistory = await ScanHistory.findOne({
+      user: user._id,
+      normalizedUrl: guest.normalizedUrl,
+    });
+
+    if (existingHistory) {
+
+      // Merge counts
+      existingHistory.scanCount += guest.scanCount;
+
+      // Keep latest viewed date
+      if (
+        guest.lastViewedAt > existingHistory.lastViewedAt
+      ) {
+        existingHistory.lastViewedAt = guest.lastViewedAt;
       }
-    );
+
+      // Keep latest scan reference
+      existingHistory.scan = guest.scan;
+      existingHistory.result = guest.result;
+      existingHistory.originalUrl = guest.originalUrl;
+
+      await existingHistory.save();
+
+      // Remove guest duplicate
+      await guest.deleteOne();
+
+    } else {
+
+      // Transfer ownership
+      guest.user = user._id;
+      guest.device_id = null;
+
+      await guest.save();
+
+    }
+
   }
+
+}
 
   return res.status(201).json({
     success: true,
@@ -155,20 +194,59 @@ if (device_id) {
     }
   );
 }
-  // Merge guest history into logged-in user
-  if (device_id) {
-    await ScanHistory.updateMany(
-      {
-        device_id,
-        user: null,
-      },
-      {
-        $set: {
-          user: user._id,
-        },
+ // =======================================================
+// Merge guest history into logged-in user
+// =======================================================
+
+if (device_id) {
+
+  const guestHistory = await ScanHistory.find({
+    device_id,
+    user: null,
+  });
+
+  for (const guest of guestHistory) {
+
+    const existingHistory = await ScanHistory.findOne({
+      user: user._id,
+      normalizedUrl: guest.normalizedUrl,
+    });
+
+    if (existingHistory) {
+
+      // Merge counts
+      existingHistory.scanCount += guest.scanCount;
+
+      // Keep latest viewed date
+      if (
+        guest.lastViewedAt > existingHistory.lastViewedAt
+      ) {
+        existingHistory.lastViewedAt = guest.lastViewedAt;
       }
-    );
+
+      // Keep latest scan reference
+      existingHistory.scan = guest.scan;
+      existingHistory.result = guest.result;
+      existingHistory.originalUrl = guest.originalUrl;
+
+      await existingHistory.save();
+
+      // Remove guest duplicate
+      await guest.deleteOne();
+
+    } else {
+
+      // Transfer ownership
+      guest.user = user._id;
+      guest.device_id = null;
+
+      await guest.save();
+
+    }
+
   }
+
+}
 
   return res.status(200).json({
     success: true,
