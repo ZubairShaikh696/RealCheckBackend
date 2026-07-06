@@ -7,18 +7,29 @@ const deviceSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      index: true,
+    },
+
+    // Logged-in user (null means Guest)
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
 
     device_name: {
       type: String,
+      default: null,
     },
 
     platform: {
       type: String,
+      required: true,
     },
 
     os_version: {
       type: String,
+      default: null,
     },
 
     app_version: {
@@ -34,6 +45,7 @@ const deviceSchema = new mongoose.Schema(
     freeCredits: {
       type: Number,
       default: 3,
+      min: 0,
     },
 
     isPremium: {
@@ -44,7 +56,7 @@ const deviceSchema = new mongoose.Schema(
     lastActiveAt: {
       type: Date,
       default: Date.now,
-    }
+    },
   },
   {
     timestamps: true,
