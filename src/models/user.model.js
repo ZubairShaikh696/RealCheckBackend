@@ -26,12 +26,24 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    isPremium: {
-      type: Boolean,
-      default: false,
+    subscriptionType: {
+      type: String,
+      enum: [
+        "free",
+        "monthly",
+        "yearly",
+        "bundle",
+      ],
+      default: "free",
     },
 
-    premiumExpiresAt: {
+    bundleCredits: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    subscriptionExpiresAt: {
       type: Date,
       default: null,
     },

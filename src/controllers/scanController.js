@@ -7,6 +7,10 @@ const ScanHistory = require("../models/ScanHistory");
 const { normalizeUrl } = require("../utils/url.helper");
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 Hours
+const {
+  canScan,
+  consumeCredit,
+} = require("../helpers/subscription.helper");
 
 // =======================================================
 // SAVE / UPDATE HISTORY
@@ -65,8 +69,8 @@ const scanUrl = async (req, res) => {
 
   try {
 
-    const { url, device_id } = req.body;
-
+    const { url } = req.body;
+    const device_id = req.headers["x-device-id"];
     // ==========================================
     // VALIDATION
     // ==========================================
@@ -117,24 +121,29 @@ const scanUrl = async (req, res) => {
         message: "Device not registered",
       });
     }
-
+    if (!canScan(req.user, device)) {
+      return res.status(403).json({
+        success: false,
+        message: "No credits remaining.",
+      });
+    }
     // ==========================================
     // GUEST CREDIT CHECK
     // ==========================================
 
-    if (!req.user) {
+    // if (!req.user) {
 
-      if (device.freeCredits <= 0) {
+    //   if (device.freeCredits <= 0) {
 
-        return res.status(403).json({
-          success: false,
-          message:
-            "Free credits exhausted. Please login and purchase Premium.",
-        });
+    //     return res.status(403).json({
+    //       success: false,
+    //       message:
+    //         "Free credits exhausted. Please login and purchase Premium.",
+    //     });
 
-      }
+    //   }
 
-    }
+    // }
 
     // ==========================================
     // CACHE LOOKUP
@@ -151,7 +160,7 @@ const scanUrl = async (req, res) => {
 
     // Cache still valid
     if (!cacheExpired) {
-
+        const account = await consumeCredit(req.user, device);
         await saveHistory({
             user: req.user,
             device_id,
@@ -171,7 +180,8 @@ const scanUrl = async (req, res) => {
 
             lastScannedAt: existingScan.lastScannedAt,
 
-            data: existingScan
+            data: existingScan,
+            account
 
         });
 
@@ -260,43 +270,37 @@ const scanUrl = async (req, res) => {
       normalizedUrl,
       result,
     });
-
+      const account = await consumeCredit(
+        req.user,
+        device
+      );
     // ==========================================
     // DEDUCT GUEST CREDIT
     // ==========================================
 
-    if (!req.user) {
+//     if (!req.user) {
 
-    if (device.freeCredits > 0) {
+//     if (device.freeCredits > 0) {
 
-        device.freeCredits -= 1;
+//         device.freeCredits -= 1;
 
-        await device.save();
+//         await device.save();
 
-    }
+//     }
 
-}
+// }
 
     // ==========================================
     // SUCCESS RESPONSE
     // ==========================================
 
     return res.status(200).json({
-
       success: true,
-
       cached: false,
-
       cacheExpired: false,
-
-      remainingCredits: req.user
-        ? null
-        : device.freeCredits,
-      
       lastScannedAt: scan.lastScannedAt,
-      
       data: scan,
-
+      account,
     });
 
   } catch (error) {
@@ -359,9 +363,14 @@ const scanUrl = async (req, res) => {
 
 // reanalyze
 const reanalyzeUrl = async (req, res) => {
+  
   try {
-    const { url, device_id } = req.body;
+    const device_id = req.headers["x-device-id"];
 
+    const device = await Device.findOne({
+        device_id,
+    });
+    const { url } = req.body;
     if (!url || !device_id) {
       return res.status(400).json({
         success: false,
@@ -370,13 +379,24 @@ const reanalyzeUrl = async (req, res) => {
     }
 
     const normalized = normalizeUrl(url);
-
     if (!normalized) {
       return res.status(400).json({
         success: false,
         message: "Invalid URL",
       });
     }
+    if (!device) {
+   return res.status(404).json({
+      success:false,
+      message:"Device not registered"
+   });
+}
+if (!canScan(req.user, device)) {
+   return res.status(403).json({
+      success:false,
+      message:"No credits remaining."
+   });
+}
 
     const { originalUrl, normalizedUrl } = normalized;
 
@@ -420,8 +440,10 @@ const reanalyzeUrl = async (req, res) => {
         ),
       },
       {
-        new: true,
-      }
+    new:true,
+    upsert:true,
+    setDefaultsOnInsert:true
+}
     );
 
     await saveHistory({
@@ -432,11 +454,13 @@ const reanalyzeUrl = async (req, res) => {
       normalizedUrl,
       result,
     });
+    const account = await consumeCredit(req.user, device);
 
     return res.status(200).json({
       success: true,
       message: "URL reanalyzed successfully.",
       data: scan,
+      account
     });
 
   } catch (error) {
@@ -455,7 +479,8 @@ const reanalyzeUrl = async (req, res) => {
 const getHistory = async (req, res) => {
   try {
 
-    const { device_id } = req.query;
+    // const { device_id } = req.query;
+    const device_id = req.headers["x-device-id"];
 
     let query = {};
 
@@ -515,8 +540,10 @@ const deleteHistory = async (req, res) => {
       query.user = req.user._id;
 
     } else {
+    const device_id = req.headers["x-device-id"];
 
-      query.device_id = req.query.device_id;
+    query.device_id = device_id;
+      // query.device_id = req.query.device_id;
 
     }
 
