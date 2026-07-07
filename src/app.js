@@ -4,6 +4,7 @@ const authRoutes = require("./routes/auth.routes");
 const scanRoutes = require("./routes/scanRoutes");
 const errorHandler = require("./middleware/error.middleware");
 const deviceRoutes = require("./routes/device.routes");
+const devRoutes = require("./routes/dev.routes");
 const app = express();
 
 app.use(express.json());
@@ -19,6 +20,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/scan", scanRoutes);
 app.use("/api/device", deviceRoutes);
+app.use("/api/dev", devRoutes);
 
 app.use(errorHandler);
 

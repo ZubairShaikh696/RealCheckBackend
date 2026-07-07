@@ -365,12 +365,13 @@ const scanUrl = async (req, res) => {
 const reanalyzeUrl = async (req, res) => {
   
   try {
+    const { url } = req.body;
+
     const device_id = req.headers["x-device-id"];
 
     const device = await Device.findOne({
         device_id,
     });
-    const { url } = req.body;
     if (!url || !device_id) {
       return res.status(400).json({
         success: false,
