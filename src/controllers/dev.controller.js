@@ -1,50 +1,95 @@
+const jwt = require("jsonwebtoken");
+
 const Device = require("../models/Device");
+const User = require("../models/user.model");
 
-// ========================================
-// RESET FREE CREDITS (DEV ONLY)
-// ========================================
-const updateCredits = async (req, res) => {
+exports.updateCredits = async (req, res) => {
   try {
-    const { device_id, credits } = req.body;
+    const { credits } = req.body;
 
-    if (!device_id) {
+    if (credits === undefined) {
       return res.status(400).json({
         success: false,
-        message: "device_id is required",
+        message: "credits is required",
       });
     }
 
-    const device = await Device.findOne({ device_id });
+    // ==========================
+    // DEVICE
+    // ==========================
 
-    if (!device) {
-      return res.status(404).json({
-        success: false,
-        message: "Device not found",
-      });
-    }
+    const device_id =
+      req.headers["x-device-id"] || req.body.device_id;
 
-    device.freeCredits = Number(credits ?? 3);
+    if (device_id) {
+      const device = await Device.findOne({ device_id });
 
-    await device.save();
+      if (!device) {
+        return res.status(404).json({
+          success: false,
+          message: "Device not found",
+        });
+      }
 
-    return res.status(200).json({
-      success: true,
-      message: "Credits updated successfully.",
-      data: {
-        device_id: device.device_id,
+      device.freeCredits = Number(credits);
+
+      await device.save();
+
+      return res.status(200).json({
+        success: true,
+        type: "device",
         freeCredits: device.freeCredits,
-      },
+      });
+    }
+
+    // ==========================
+    // USER
+    // ==========================
+
+    const authHeader = req.headers.authorization;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+
+      let decoded;
+
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch {
+        decoded = jwt.verify(token, process.env.REFRESH_SECRET);
+      }
+
+      const user = await User.findById(decoded.userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      user.bundleCredits = Number(credits);
+
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        type: "user",
+        credits: user.bundleCredits,
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message:
+        "Provide x-device-id header or Authorization token",
     });
   } catch (error) {
     console.log(error);
 
     return res.status(500).json({
       success: false,
-      message: "Something went wrong.",
+      message: "Something went wrong",
     });
   }
-};
-
-module.exports = {
-  updateCredits,
 };
