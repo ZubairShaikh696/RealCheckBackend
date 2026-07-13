@@ -15,36 +15,52 @@ const getAccountInfo = (user, device) => {
   // Guest
   if (isGuest(user)) {
     return {
-      accountType: SUBSCRIPTION.GUEST,
-      unlimited: false,
-      remainingCredits: device?.freeCredits ?? 0,
-    };
+  hasPremium: false,
+  accountType: SUBSCRIPTION.GUEST,
+  planType: "guest",
+  planName: "Guest",
+  unlimited: false,
+  expiryDate: null,
+  remainingCredits: device?.freeCredits ?? 0,
+};
   }
 
   // Monthly / Yearly
   if (isUnlimited(user) && !isExpired(user)) {
     return {
-      accountType: user.subscriptionType,
-      unlimited: true,
-      remainingCredits: null,
-    };
+  hasPremium: true,
+  accountType: user.subscriptionType,
+  planType: "subscription",
+  planName: user.planName,
+  unlimited: true,
+  expiryDate: user.subscriptionExpiresAt,
+  remainingCredits: null,
+};
   }
 
   // Bundle
   if (isBundle(user)) {
     return {
-      accountType: SUBSCRIPTION.BUNDLE,
-      unlimited: false,
-      remainingCredits: user.bundleCredits,
-    };
+  hasPremium: true,
+  accountType: SUBSCRIPTION.BUNDLE,
+  planType: "credits",
+  planName: user.planName,
+  unlimited: false,
+  expiryDate: null,
+  remainingCredits: user.bundleCredits,
+};
   }
 
   // Logged-in Free User
   return {
-    accountType: SUBSCRIPTION.FREE,
-    unlimited: false,
-    remainingCredits: 0,
-  };
+  hasPremium: false,
+  accountType: SUBSCRIPTION.FREE,
+  planType: "free",
+  planName: "Free",
+  unlimited: false,
+  expiryDate: null,
+  remainingCredits: 0,
+};
 };
 
 // ==========================

@@ -7,11 +7,16 @@ const {
   login,
   refreshToken,
   logout,
+  changePassword
 } = require("../controllers/auth.controller");
+
+const { protect } = require("../middleware/auth.middleware");
 
 router.post("/register", register);
 
 router.post("/login", login);
+
+router.post("/change-password", protect, changePassword);
 
 router.post("/refresh-token", refreshToken);
 

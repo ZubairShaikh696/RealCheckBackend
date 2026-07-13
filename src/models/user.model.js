@@ -5,15 +5,12 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
-      trim: true,
     },
 
     password: {
@@ -21,30 +18,37 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    refreshToken: {
-      type: String,
-      default: null,
+    // ==========================
+    // Subscription
+    // ==========================
+    hasPremium: {
+      type: Boolean,
+      default: false,
     },
 
     subscriptionType: {
       type: String,
-      enum: [
-        "free",
-        "monthly",
-        "yearly",
-        "bundle",
-      ],
+      enum: ["free", "monthly", "yearly", "bundle"],
       default: "free",
+    },
+
+    planName: {
+      type: String,
+      default: "Free",
+    },
+
+    subscriptionExpiresAt: {
+      type: Date,
+      default: null,
     },
 
     bundleCredits: {
       type: Number,
       default: 0,
-      min: 0,
     },
 
-    subscriptionExpiresAt: {
-      type: Date,
+    refreshToken: {
+      type: String,
       default: null,
     },
   },

@@ -4,12 +4,13 @@ const Device = require("../models/Device");
 const User = require("../models/user.model");
 const ScanHistory = require("../models/ScanHistory");
 const asyncHandler = require("../middleware/async.middleware");
+const { getAccountInfo } = require("../helpers/subscription.helper");
 
 // =========================
 // REGISTER
 // =========================
 exports.register = asyncHandler(async (req, res) => {
-  const { name, email, password, device_id } = req.body;
+  const { name, email, password } = req.body;
 
   const existingUser = await User.findOne({ email });
 
@@ -43,92 +44,25 @@ exports.register = asyncHandler(async (req, res) => {
 // Save refresh token in DB
 user.refreshToken = refreshToken;
 await user.save();
-// Link device with logged-in/registered user and merge guest history
-if (device_id) {
-  const device = await Device.findOne({ device_id });
 
-  if (device) {
-    device.user = user._id;
-    await device.save();
-  }
+const account = getAccountInfo(user);
+ return res.status(201).json({
+  success: true,
+  message: "User registered successfully",
+  accessToken,
+  refreshToken,
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
 
-  await ScanHistory.updateMany(
-    {
-      device_id,
-      user: null,
-    },
-    {
-      $set: {
-        user: user._id,
-      },
-    }
-  );
-}
-  // =======================================================
-// Merge guest history into logged-in user
-// =======================================================
-
-if (device_id) {
-
-  const guestHistory = await ScanHistory.find({
-    device_id,
-    user: null,
-  });
-
-  for (const guest of guestHistory) {
-
-    const existingHistory = await ScanHistory.findOne({
-      user: user._id,
-      normalizedUrl: guest.normalizedUrl,
-    });
-
-    if (existingHistory) {
-
-      // Merge counts
-      existingHistory.scanCount += guest.scanCount;
-
-      // Keep latest viewed date
-      if (
-        guest.lastViewedAt > existingHistory.lastViewedAt
-      ) {
-        existingHistory.lastViewedAt = guest.lastViewedAt;
-      }
-
-      // Keep latest scan reference
-      existingHistory.scan = guest.scan;
-      existingHistory.result = guest.result;
-      existingHistory.originalUrl = guest.originalUrl;
-
-      await existingHistory.save();
-
-      // Remove guest duplicate
-      await guest.deleteOne();
-
-    } else {
-
-      // Transfer ownership
-      guest.user = user._id;
-      guest.device_id = null;
-
-      await guest.save();
-
-    }
-
-  }
-
-}
-
-  return res.status(201).json({
-    success: true,
-    message: "User registered successfully",
-    accessToken,
-    refreshToken,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
-  });
+    hasPremium: account.hasPremium,
+    planType: account.planType,
+    planName: account.planName,
+    expiryDate: account.expiryDate,
+    credits: account.remainingCredits,
+  },
+});
 });
 
 // =========================
@@ -182,17 +116,6 @@ if (device_id) {
     await device.save();
   }
 
-  await ScanHistory.updateMany(
-    {
-      device_id,
-      user: null,
-    },
-    {
-      $set: {
-        user: user._id,
-      },
-    }
-  );
 }
  // =======================================================
 // Merge guest history into logged-in user
@@ -247,20 +170,86 @@ if (device_id) {
   }
 
 }
+const account = getAccountInfo(user);
+
+  return res.status(200).json({
+  success: true,
+  message: "Login successful",
+  accessToken,
+  refreshToken,
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+
+    hasPremium: account.hasPremium,
+    planType: account.planType,
+    planName: account.planName,
+    expiryDate: account.expiryDate,
+    credits: account.remainingCredits,
+  },
+});
+});
+
+// =========================
+// CHANGE PASSWORD
+// =========================
+exports.changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Current password and new password are required.",
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "New password must be at least 6 characters.",
+    });
+  }
+
+  const user = await User.findById(req.user._id);
+
+  const isMatch = await bcrypt.compare(
+    currentPassword,
+    user.password
+  );
+
+  if (!isMatch) {
+    return res.status(400).json({
+      success: false,
+      message: "Current password is incorrect.",
+    });
+  }
+
+  const isSamePassword = await bcrypt.compare(
+    newPassword,
+    user.password
+  );
+
+  if (isSamePassword) {
+    return res.status(400).json({
+      success: false,
+      message: "New password must be different from current password.",
+    });
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+
+  await user.save();
 
   return res.status(200).json({
     success: true,
-    message: "Login successful",
-    accessToken,
-    refreshToken,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
+    message: "Password changed successfully.",
   });
 });
 
+// =========================
+// Refresh token
+// =========================
 exports.refreshToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
 
@@ -301,6 +290,9 @@ exports.refreshToken = asyncHandler(async (req, res) => {
   });
 });
 
+// =========================
+// Logout
+// =========================
 exports.logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
 
