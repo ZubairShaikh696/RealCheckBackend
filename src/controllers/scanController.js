@@ -66,7 +66,6 @@ const saveHistory = async ({
 // =======================================================
 
 const scanUrl = async (req, res) => {
-
   try {
 
     const { url } = req.body;
@@ -82,7 +81,7 @@ const scanUrl = async (req, res) => {
       });
     }
 
-    if (!device_id) {
+    if (!req.user && !device_id) {
       return res.status(400).json({
         success: false,
         message: "device_id is required",
@@ -111,16 +110,28 @@ const scanUrl = async (req, res) => {
     // DEVICE
     // ==========================================
 
-    const device = await Device.findOne({
-      device_id,
-    });
+    let device = null;
 
-    if (!device) {
+if (device_id) {
+
+   device = await Device.findOne({
+      device_id,
+   });
+
+   if (!req.user && !device) {
       return res.status(404).json({
-        success: false,
-        message: "Device not registered",
+         success:false,
+         message:"Device not registered"
       });
-    }
+   }
+
+  // if (!device) {
+  //   return res.status(404).json({
+  //     success: false,
+  //     message: "Device not registered",
+  //   });
+  // }
+}
     if (!canScan(req.user, device)) {
       return res.status(403).json({
         success: false,
@@ -368,16 +379,27 @@ const reanalyzeUrl = async (req, res) => {
     const { url } = req.body;
 
     const device_id = req.headers["x-device-id"];
+    let device = null;
 
-    const device = await Device.findOne({
-        device_id,
+if (device_id) {
+  device = await Device.findOne({
+    device_id,
+  });
+
+  if (!req.user && !device) {
+    return res.status(404).json({
+      success: false,
+      message: "Device not registered",
     });
-    if (!url || !device_id) {
-      return res.status(400).json({
-        success: false,
-        message: "url and device_id are required",
-      });
-    }
+  }
+}
+
+if (!req.user && !device_id) {
+  return res.status(400).json({
+    success:false,
+    message:"device_id is required"
+  });
+}
 
     const normalized = normalizeUrl(url);
     if (!normalized) {
@@ -386,7 +408,7 @@ const reanalyzeUrl = async (req, res) => {
         message: "Invalid URL",
       });
     }
-    if (!device) {
+if (!req.user && !device) {
    return res.status(404).json({
       success:false,
       message:"Device not registered"
@@ -398,7 +420,6 @@ if (!canScan(req.user, device)) {
       message:"No credits remaining."
    });
 }
-
     const { originalUrl, normalizedUrl } = normalized;
 
     const encodedUrl = Buffer.from(originalUrl).toString("base64");
@@ -410,6 +431,7 @@ if (!canScan(req.user, device)) {
         headers: {
           "x-apikey": process.env.VIRUSTOTAL_API_KEY,
         },
+         timeout:15000,
       }
     );
 
@@ -455,7 +477,7 @@ if (!canScan(req.user, device)) {
       normalizedUrl,
       result,
     });
-    const account = await consumeCredit(req.user, device);
+const account = await consumeCredit(req.user, device || null);
 
     return res.status(200).json({
       success: true,

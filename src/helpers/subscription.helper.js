@@ -59,7 +59,7 @@ const getAccountInfo = (user, device) => {
   planName: "Free",
   unlimited: false,
   expiryDate: null,
-  remainingCredits: device?.freeCredits ?? 0,
+  remainingCredits: 0,
 };
 };
 
@@ -89,16 +89,15 @@ const consumeCredit = async (user, device) => {
   }
 
   // Guest
-  // Guest OR Free User
-if (isGuest(user) || user.subscriptionType === SUBSCRIPTION.FREE) {
+  if (isGuest(user)) {
 
     if (device.freeCredits > 0) {
-        device.freeCredits -= 1;
-        await device.save();
+      device.freeCredits -= 1;
+      await device.save();
     }
 
-    return getAccountInfo(user, device);
-}
+    return getAccountInfo(null, device);
+  }
 
   // Bundle
   if (isBundle(user)) {
