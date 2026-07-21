@@ -1,6 +1,7 @@
 const stripe = require("../config/stripe");
 const PLANS = require("../constants/plans");
 const User = require("../models/user.model");
+const { getAccountInfo } = require("../helpers/subscription.helper");
 
 exports.createPaymentIntent = async (req, res) => {
   try {
@@ -34,11 +35,12 @@ exports.createPaymentIntent = async (req, res) => {
       });
 
     return res.json({
-      success: true,
-      clientSecret: paymentIntent.client_secret,
-      amount: plan.amount,
-      planName: plan.name,
-    });
+  success: true,
+  clientSecret: paymentIntent.client_secret,
+  paymentIntentId: paymentIntent.id,
+  amount: plan.amount,
+  planName: plan.name,
+});
 
   } catch (error) {
 
@@ -141,12 +143,23 @@ console.log(paymentIntent.metadata);
     }
 
     await user.save();
-
+    const account = getAccountInfo(user);
     return res.json({
-      success: true,
-      message: "Payment successful.",
-      user,
-    });
+  success: true,
+  message: "Payment successful.",
+
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+
+    hasPremium: account.hasPremium,
+    planType: account.planType,
+    planName: account.planName,
+    expiryDate: account.expiryDate,
+    credits: account.remainingCredits,
+  },
+});
 
   } catch (error) {
 
