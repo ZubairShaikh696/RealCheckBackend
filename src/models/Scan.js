@@ -48,6 +48,15 @@ const scanSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    aiExplanation: {
+  type: String,
+  default: null,
+},
+
+aiGeneratedAt: {
+  type: Date,
+  default: null,
+},
   },
   {
     timestamps: true,
