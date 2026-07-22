@@ -46,6 +46,15 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    rewardToday: {
+  type: Number,
+  default: 0,
+},
+
+lastRewardAt: {
+  type: Date,
+  default: null,
+},
 
     refreshToken: {
       type: String,

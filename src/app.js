@@ -8,6 +8,7 @@ const devRoutes = require("./routes/dev.routes");
 const subscriptionRoutes = require("./routes/subscription.routes");
 const purchaseRoutes = require("./routes/payment.routes");
 const aiRoutes = require("./routes/ai.routes");
+const rewardRoutes = require("./routes/reward.routes");
 const app = express();
 
 app.use(express.json());
@@ -27,6 +28,7 @@ app.use("/api/dev", devRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/payment",purchaseRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/reward", rewardRoutes);
 app.use(errorHandler);
 
 module.exports = app;

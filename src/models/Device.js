@@ -57,6 +57,15 @@ const deviceSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    rewardToday: {
+  type: Number,
+  default: 0,
+},
+
+lastRewardAt: {
+  type: Date,
+  default: null,
+},
   },
   {
     timestamps: true,
