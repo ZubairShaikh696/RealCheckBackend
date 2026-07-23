@@ -15,7 +15,11 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: true,
+function () {
+    return this.provider === "email";
+  },
+
+  default: null,
     },
 
     // ==========================
@@ -57,9 +61,10 @@ const userSchema = new mongoose.Schema(
     },
 
     provider: {
-      type: String,
-      default: "email",
-    },
+  type: String,
+  enum: ["email", "google"],
+  default: "email",
+},
 
     avatar: {
       type: String,
