@@ -47,14 +47,29 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
     rewardToday: {
-  type: Number,
-  default: 0,
-},
+      type: Number,
+      default: 0,
+    },
 
-lastRewardAt: {
-  type: Date,
-  default: null,
-},
+    googleId: {
+      type: String,
+      default: null,
+    },
+
+    provider: {
+      type: String,
+      default: "email",
+    },
+
+    avatar: {
+      type: String,
+      default: null,
+    },
+
+    lastRewardAt: {
+      type: Date,
+      default: null,
+    },
 
     refreshToken: {
       type: String,
@@ -63,7 +78,7 @@ lastRewardAt: {
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 module.exports = mongoose.model("User", userSchema);

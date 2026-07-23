@@ -16,6 +16,8 @@ router.post("/register", register);
 
 router.post("/login", login);
 
+router.post("/google", authController.googleLogin);
+
 router.post("/change-password", protect, changePassword);
 
 router.post("/refresh-token", refreshToken);
