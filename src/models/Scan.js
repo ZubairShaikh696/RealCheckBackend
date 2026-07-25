@@ -2,19 +2,42 @@ const mongoose = require("mongoose");
 
 const scanSchema = new mongoose.Schema(
   {
+    // ==========================
+    // Scan Type
+    // ==========================
+    scanType: {
+      type: String,
+      enum: ["url", "image"],
+      default: "url",
+      index: true,
+    },
+
+    // ==========================
+    // URL Scan
+    // ==========================
     originalUrl: {
       type: String,
-      required: true,
-      trim: true,
+      default: null,
+      // trim: true,
     },
 
     normalizedUrl: {
       type: String,
-      required: true,
-      unique: true,
+      default: null,
       index: true,
     },
 
+    // ==========================
+    // Image Scan
+    // ==========================
+    imageKey: {
+      type: String,
+      default: null,
+    },
+
+    // ==========================
+    // Common
+    // ==========================
     scanId: {
       type: String,
       default: null,
@@ -24,6 +47,11 @@ const scanSchema = new mongoose.Schema(
       type: String,
       enum: ["Safe", "Suspicious", "Malicious", "Unknown"],
       default: "Unknown",
+    },
+
+    confidence: {
+      type: Number,
+      default: 0,
     },
 
     stats: {
@@ -39,6 +67,22 @@ const scanSchema = new mongoose.Schema(
       default: {},
     },
 
+    // ==========================
+    // AI Explanation
+    // ==========================
+    aiExplanation: {
+      type: String,
+      default: null,
+    },
+
+    aiGeneratedAt: {
+      type: Date,
+      default: null,
+    },
+
+    // ==========================
+    // Dates
+    // ==========================
     lastScannedAt: {
       type: Date,
       default: Date.now,
@@ -48,15 +92,6 @@ const scanSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    aiExplanation: {
-  type: String,
-  default: null,
-},
-
-aiGeneratedAt: {
-  type: Date,
-  default: null,
-},
   },
   {
     timestamps: true,

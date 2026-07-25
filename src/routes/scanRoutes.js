@@ -7,6 +7,7 @@ const {
   reanalyzeUrl,
   getHistory,
   deleteHistory,
+  scanImage,
 } = require("../controllers/scanController");
 
 const {
@@ -16,6 +17,9 @@ const {
 
 // Scan
 router.post("/", optionalAuth, scanUrl);
+
+// image scan route
+router.post("/image", optionalAuth, scanImage);
 
 // Reanalyze
 router.post("/reanalyze", protect, reanalyzeUrl);
