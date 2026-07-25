@@ -10,7 +10,9 @@ const { normalizeUrl } = require("../utils/url.helper");
 const {
   getImageBuffer,
 } = require("../services/awsImage.service");
-
+const {
+  getImageSignedUrl,
+} = require("../services/s3SignedUrl.service");
 const {
   scanImage: scanImageAI,
 } = require("../services/openaiVision.service");
@@ -682,11 +684,29 @@ const getHistory = async (req, res) => {
 
     const history =
       await ScanHistory.find(query)
-        .populate("scan")
+      // .populate("scan")
+        .populate({
+  path: "scan",
+  select:
+    "scanType result originalUrl imageKey createdAt",
+})
         .sort({ lastViewedAt: -1 })
         .skip(skip)
         .limit(limit);
+        const result = [];
+for (const item of history) {
+  const obj = item.toObject();
 
+  if (
+    obj.scan &&
+    obj.scan.scanType === "image" &&
+    obj.scan.imageKey
+  ) {
+    obj.scan.imagePreviewUrl = await getImageSignedUrl(obj.scan.imageKey);
+  }
+
+  result.push(obj);
+}
     //------------------------------------------------
 
     return res.status(200).json({
@@ -702,7 +722,7 @@ const getHistory = async (req, res) => {
 
       hasMore: page < Math.ceil(total / limit),
 
-      data: history,
+      data: result,
     });
 
   } catch (error) {
