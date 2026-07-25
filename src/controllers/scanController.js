@@ -7,13 +7,9 @@ const { getImageBase64 } = require("../services/imageScan.service");
 const { normalizeUrl } = require("../utils/url.helper");
 
 // image scan
-const {
-  getImageBuffer,
-} = require("../services/awsImage.service");
+const { getImageBuffer } = require("../services/awsImage.service");
 
-const {
-  scanImage: scanImageAI,
-} = require("../services/openaiVision.service");
+const { scanImage: scanImageAI } = require("../services/openaiVision.service");
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 Hours
 const { canScan, consumeCredit } = require("../helpers/subscription.helper");
@@ -344,7 +340,6 @@ const scanUrl = async (req, res) => {
 // image scan
 const scanImage = async (req, res) => {
   try {
-
     const { imageKey } = req.body;
     const device_id = req.headers["x-device-id"];
 
@@ -373,7 +368,6 @@ const scanImage = async (req, res) => {
     let device = null;
 
     if (device_id) {
-
       device = await Device.findOne({
         device_id,
       });
@@ -384,7 +378,6 @@ const scanImage = async (req, res) => {
           message: "Device not registered",
         });
       }
-
     }
 
     //------------------------------------------------
@@ -402,68 +395,55 @@ const scanImage = async (req, res) => {
     // Read Image
     //------------------------------------------------
 
-    const imageBuffer =
-      await getImageBuffer(imageKey);
+    const imageBuffer = await getImageBuffer(imageKey);
 
-    const base64 =
-      imageBuffer.toString("base64");
+    const base64 = imageBuffer.toString("base64");
 
     //------------------------------------------------
     // OpenAI Scan
     //------------------------------------------------
 
-    const ai =
-      await scanImageAI(base64);
+    const ai = await scanImageAI(base64);
 
     //------------------------------------------------
     // Save Scan
     //------------------------------------------------
 
-    const scan =
-      await Scan.create({
+    const scan = await Scan.create({
+      originalUrl: imageKey,
 
-        originalUrl: imageKey,
+      normalizedUrl: imageKey,
 
-        normalizedUrl: imageKey,
+      imageKey,
 
-        imageKey,
+      scanType: "image",
 
-        scanType: "image",
+      result: ai.result,
 
-        result: ai.result,
+      confidence: ai.confidence,
 
-        confidence: ai.confidence,
+      stats: {
+        harmless: ai.result === "Safe" ? 1 : 0,
 
-        stats: {
+        malicious: ai.result === "Malicious" ? 1 : 0,
 
-          harmless:
-            ai.result === "Safe" ? 1 : 0,
+        suspicious: ai.result === "Suspicious" ? 1 : 0,
 
-          malicious:
-            ai.result === "Malicious" ? 1 : 0,
+        undetected: 0,
 
-          suspicious:
-            ai.result === "Suspicious" ? 1 : 0,
+        timeout: 0,
+      },
 
-          undetected: 0,
+      fullResponse: ai,
 
-          timeout: 0,
-
-        },
-
-        fullResponse: ai,
-
-        cacheExpiresAt:
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-
-      });
+      cacheExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
 
     //------------------------------------------------
     // History
     //------------------------------------------------
 
     await saveHistory({
-
       user: req.user,
 
       device_id,
@@ -475,22 +455,19 @@ const scanImage = async (req, res) => {
       normalizedUrl: imageKey,
 
       result: ai.result,
-
     });
 
     //------------------------------------------------
     // Consume Credit
     //------------------------------------------------
 
-    const account =
-      await consumeCredit(req.user, device);
+    const account = await consumeCredit(req.user, device);
 
     //------------------------------------------------
     // Response
     //------------------------------------------------
 
     return res.json({
-
       success: true,
 
       cached: false,
@@ -502,25 +479,16 @@ const scanImage = async (req, res) => {
       data: scan,
 
       account,
-
     });
-
-  }
-
-  catch (err) {
-
+  } catch (err) {
     console.log(err);
 
     return res.status(500).json({
-
       success: false,
 
       message: "Image scan failed",
-
     });
-
   }
-
 };
 
 // reanalyze
@@ -642,11 +610,16 @@ const reanalyzeUrl = async (req, res) => {
   }
 };
 
-// history
+// ==========================
+// History (Pagination)
+// ==========================
 const getHistory = async (req, res) => {
   try {
-    // const { device_id } = req.query;
     const device_id = req.headers["x-device-id"];
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 15;
+    const skip = (page - 1) * limit;
 
     let query = {};
 
@@ -663,13 +636,36 @@ const getHistory = async (req, res) => {
       query.device_id = device_id;
     }
 
-    const history = await ScanHistory.find(query).populate("scan").sort({
-      lastViewedAt: -1,
-    });
+    //------------------------------------------------
+
+    const total = await ScanHistory.countDocuments(query);
+
+    //------------------------------------------------
+
+    const history = await ScanHistory.find(query)
+      .populate({
+        path: "scan",
+        select: "scanType result originalUrl imageKey createdAt",
+      })
+      .sort({ lastViewedAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    //------------------------------------------------
 
     return res.status(200).json({
       success: true,
-      total: history.length,
+
+      page,
+
+      limit,
+
+      total,
+
+      totalPages: Math.ceil(total / limit),
+
+      hasMore: page < Math.ceil(total / limit),
+
       data: history,
     });
   } catch (error) {
