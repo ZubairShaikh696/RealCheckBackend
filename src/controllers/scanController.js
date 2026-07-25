@@ -688,7 +688,7 @@ const getHistory = async (req, res) => {
         .populate({
   path: "scan",
   select:
-    "scanType result originalUrl imageKey createdAt",
+    "scanType result originalUrl imageKey createdAt stats",
 })
         .sort({ lastViewedAt: -1 })
         .skip(skip)
