@@ -25,7 +25,7 @@ exports.createPaymentIntent = async (req, res) => {
         currency: "usd",
         automatic_payment_methods: {
           enabled: true,
-          allow_redirects: "never",
+          allow_redirects: "always",
         },
 
         metadata: {
