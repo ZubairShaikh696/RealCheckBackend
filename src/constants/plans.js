@@ -2,7 +2,7 @@ const PLANS = {
   MONTHLY: {
     id: "monthly",
     name: "Premium Monthly",
-    amount: 700, // $7.00
+    amount: 699, // $6.99
     type: "subscription",
     durationDays: 30,
   },
@@ -10,7 +10,7 @@ const PLANS = {
   YEARLY: {
     id: "yearly",
     name: "Premium Yearly",
-    amount: 5000, // $50.00
+    amount: 4999, // $49.99
     type: "subscription",
     durationDays: 365,
   },
@@ -18,7 +18,7 @@ const PLANS = {
   PLAN_A: {
     id: "plan_a",
     name: "Plan A",
-    amount: 500, // $5.00
+    amount: 799, // $7.99
     type: "bundle",
     credits: 10,
   },
@@ -26,7 +26,7 @@ const PLANS = {
   PLAN_B: {
     id: "plan_b",
     name: "Plan B",
-    amount: 1500, // $15.00
+    amount: 1499, // $14.99
     type: "bundle",
     credits: 25,
   },
@@ -34,7 +34,7 @@ const PLANS = {
   PLAN_C: {
     id: "plan_c",
     name: "Plan C",
-    amount: 5000, // $50.00
+    amount: 24.99, // $24.99
     type: "bundle",
     credits: 50,
   },
