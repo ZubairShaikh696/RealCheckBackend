@@ -34,7 +34,7 @@ const PLANS = {
   PLAN_C: {
     id: "plan_c",
     name: "Plan C",
-    amount: 24.99, // $24.99
+    amount: 2499, // $24.99
     type: "bundle",
     credits: 50,
   },
