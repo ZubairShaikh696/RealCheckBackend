@@ -19,5 +19,10 @@ router.post(
   auth.protect,
   paymentController.confirmPayment
 );
+router.get(
+  "/payment-history",
+  auth.protect,
+  paymentController.getPaymentHistory
+);
 
 module.exports = router;
