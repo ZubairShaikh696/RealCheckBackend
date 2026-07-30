@@ -827,11 +827,13 @@ const toggleFavorite = async (req, res) => {
 // Favorite History
 const getFavoriteHistory = async (req, res) => {
   try {
+    const device_id = req.headers["x-device-id"];
+
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 15;
     const skip = (page - 1) * limit;
 
-    const device_id = req.headers["x-device-id"];
+    //------------------------------------------------
 
     let query = {
       isFavorite: true,
@@ -850,19 +852,21 @@ const getFavoriteHistory = async (req, res) => {
       query.device_id = device_id;
     }
 
-    //----------------------------------------
+    //------------------------------------------------
 
     const total = await ScanHistory.countDocuments(query);
 
-    //----------------------------------------
+    //------------------------------------------------
 
     const history = await ScanHistory.find(query)
       .populate("scan")
-      .sort({ updatedAt: -1 })
+      .sort({ lastViewedAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    //----------------------------------------
+    //------------------------------------------------
+    // Generate signed URL for image scans
+    //------------------------------------------------
 
     for (const item of history) {
       if (
@@ -872,14 +876,15 @@ const getFavoriteHistory = async (req, res) => {
       ) {
         item.scan = item.scan.toObject();
 
-        item.scan.imagePreviewUrl =
-          await getImageSignedUrl(item.scan.imageKey);
+        item.scan.imagePreviewUrl = await getImageSignedUrl(
+          item.scan.imageKey
+        );
       }
     }
 
-    //----------------------------------------
+    //------------------------------------------------
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       page,
       limit,
@@ -888,12 +893,13 @@ const getFavoriteHistory = async (req, res) => {
       hasMore: page < Math.ceil(total / limit),
       data: history,
     });
+
   } catch (error) {
     console.log(error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to fetch favorites.",
+      message: "Unable to fetch favorite history.",
     });
   }
 };
