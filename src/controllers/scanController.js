@@ -859,31 +859,43 @@ const getFavoriteHistory = async (req, res) => {
     //------------------------------------------------
 
     const history = await ScanHistory.find(query)
-      .populate("scan")
+      .populate({
+  path: "scan",
+  select:
+    "scanType result originalUrl imageKey createdAt stats",
+})
       .sort({ lastViewedAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+       .lean();
 
     //------------------------------------------------
     // Generate signed URL for image scans
     //------------------------------------------------
 
     for (const item of history) {
+      console.log("Scan Type:", item.scan?.scanType);
+  console.log("Image Key:", item.scan?.imageKey);
       if (
         item.scan &&
         item.scan.scanType === "image" &&
         item.scan.imageKey
       ) {
-        item.scan = item.scan.toObject();
 
-        item.scan.imagePreviewUrl = await getImageSignedUrl(
-          item.scan.imageKey
-        );
+    // const signedUrl = await getImageSignedUrl(item.scan.imageKey);
+
+item.scan.imagePreviewUrl =
+      await getImageSignedUrl(item.scan.imageKey);
+        // item.scan = item.scan.toObject();
+
+        // item.scan.imagePreviewUrl = signedUrl
       }
     }
 
     //------------------------------------------------
-
+console.log("img",
+  JSON.stringify(history, null, 2)
+);
     return res.status(200).json({
       success: true,
       page,
