@@ -779,7 +779,124 @@ const deleteHistory = async (req, res) => {
     });
   }
 };
+const toggleFavorite = async (req, res) => {
+  try {
 
+    const { historyId } = req.params;
+
+    let query = {
+      _id: historyId,
+    };
+
+    if (req.user) {
+      query.user = req.user._id;
+    } else {
+      query.device_id = req.headers["x-device-id"];
+    }
+
+    const history = await ScanHistory.findOne(query);
+
+    if (!history) {
+      return res.status(404).json({
+        success: false,
+        message: "History not found.",
+      });
+    }
+
+    history.isFavorite = !history.isFavorite;
+
+    await history.save();
+
+    return res.json({
+      success: true,
+      message: "Favorite updated.",
+      isFavorite: history.isFavorite,
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update favorite.",
+    });
+
+  }
+};
+// Favorite History
+const getFavoriteHistory = async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 15;
+    const skip = (page - 1) * limit;
+
+    const device_id = req.headers["x-device-id"];
+
+    let query = {
+      isFavorite: true,
+    };
+
+    if (req.user) {
+      query.user = req.user._id;
+    } else {
+      if (!device_id) {
+        return res.status(400).json({
+          success: false,
+          message: "device_id is required",
+        });
+      }
+
+      query.device_id = device_id;
+    }
+
+    //----------------------------------------
+
+    const total = await ScanHistory.countDocuments(query);
+
+    //----------------------------------------
+
+    const history = await ScanHistory.find(query)
+      .populate("scan")
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    //----------------------------------------
+
+    for (const item of history) {
+      if (
+        item.scan &&
+        item.scan.scanType === "image" &&
+        item.scan.imageKey
+      ) {
+        item.scan = item.scan.toObject();
+
+        item.scan.imagePreviewUrl =
+          await getImageSignedUrl(item.scan.imageKey);
+      }
+    }
+
+    //----------------------------------------
+
+    return res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page < Math.ceil(total / limit),
+      data: history,
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch favorites.",
+    });
+  }
+};
 // const scanImage = async (req, res) => {
 //   try {
 //     const { imageKey } = req.body;
@@ -815,5 +932,7 @@ module.exports = {
   reanalyzeUrl,
   getHistory,
   deleteHistory,
+  toggleFavorite,
+  getFavoriteHistory,
   scanImage,
 };

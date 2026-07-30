@@ -8,6 +8,8 @@ const {
   getHistory,
   deleteHistory,
   scanImage,
+  toggleFavorite,
+  getFavoriteHistory
 } = require("../controllers/scanController");
 
 const {
@@ -25,9 +27,21 @@ router.post("/image", optionalAuth, scanImage);
 router.post("/reanalyze", protect, reanalyzeUrl);
 
 // History
-router.get("/history", optionalAuth, getHistory);
+router.get("/history", protect, getHistory);
 
 // Delete History
-router.delete("/history/:id", optionalAuth, deleteHistory);
+router.delete("/history/:id", protect, deleteHistory);
+
+// favorite
+router.patch(
+  "/history/:historyId/favorite",
+  protect,
+  toggleFavorite
+);
+router.get(
+  "/history/favorites",
+  protect,
+  getFavoriteHistory
+);
 
 module.exports = router;

@@ -47,7 +47,10 @@ const scanHistorySchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
-
+isFavorite: {
+  type: Boolean,
+  default: false,
+},
     lastViewedAt: {
       type: Date,
       default: Date.now,
