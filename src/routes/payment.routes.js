@@ -24,5 +24,10 @@ router.get(
   auth.protect,
   paymentController.getPaymentHistory
 );
+router.post(
+  "/cancel-subscription",
+  auth.protect,
+  paymentController.cancelSubscription
+);
 
 module.exports = router;

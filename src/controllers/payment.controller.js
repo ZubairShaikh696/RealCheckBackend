@@ -245,3 +245,68 @@ exports.getPaymentHistory = async (req, res) => {
 
   }
 };
+
+exports.cancelSubscription = async (req, res) => {
+  try {
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    if (!user.hasPremium) {
+      return res.status(400).json({
+        success: false,
+        message: "No active subscription found.",
+      });
+    }
+    console.log("user.subscriptionType",user.subscriptionType)
+
+    // Bundle plans cannot be cancelled
+    if (user.subscriptionType === "bundle") {
+      return res.status(400).json({
+        success: false,
+        message: "Bundle plans cannot be cancelled.",
+      });
+    }
+
+    //----------------------------------------
+    // Cancel subscription
+    //----------------------------------------
+
+    user.hasPremium = false;
+    user.subscriptionType = "free";
+    user.planName = "Free";
+    user.subscriptionExpiresAt = null;
+
+    await user.save();
+
+    //----------------------------------------
+
+    return res.json({
+      success: true,
+      message: "Subscription cancelled successfully.",
+      user: {
+        hasPremium: false,
+        planType: "free",
+        planName: "Free",
+        expiryDate: null,
+        credits: user.bundleCredits || 0,
+      },
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to cancel subscription.",
+    });
+
+  }
+};
