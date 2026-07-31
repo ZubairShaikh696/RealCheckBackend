@@ -264,19 +264,20 @@ exports.cancelSubscription = async (req, res) => {
         message: "No active subscription found.",
       });
     }
-    console.log("user.subscriptionType",user.subscriptionType)
 
-    // Bundle plans cannot be cancelled
-    if (user.subscriptionType === "bundle") {
-      return res.status(400).json({
-        success: false,
-        message: "Bundle plans cannot be cancelled.",
-      });
+    // If using Stripe Subscriptions
+    if (user.stripeSubscriptionId) {
+
+      await stripe.subscriptions.cancel(
+        user.stripeSubscriptionId
+      );
+
+      user.stripeSubscriptionId = null;
     }
 
-    //----------------------------------------
-    // Cancel subscription
-    //----------------------------------------
+    //----------------------------------
+    // Update User
+    //----------------------------------
 
     user.hasPremium = false;
     user.subscriptionType = "free";
@@ -285,17 +286,26 @@ exports.cancelSubscription = async (req, res) => {
 
     await user.save();
 
-    //----------------------------------------
+    //----------------------------------
+    // Updated Account Info
+    //----------------------------------
+
+    const account = getAccountInfo(user);
 
     return res.json({
       success: true,
       message: "Subscription cancelled successfully.",
+
       user: {
-        hasPremium: false,
-        planType: "free",
-        planName: "Free",
-        expiryDate: null,
-        credits: user.bundleCredits || 0,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+
+        hasPremium: account.hasPremium,
+        planType: account.planType,
+        planName: account.planName,
+        expiryDate: account.expiryDate,
+        credits: account.remainingCredits,
       },
     });
 
