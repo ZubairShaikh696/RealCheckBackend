@@ -27,7 +27,7 @@ router.post("/image", optionalAuth, scanImage);
 router.post("/reanalyze", protect, reanalyzeUrl);
 
 // History
-router.get("/history", protect, getHistory);
+router.get("/history", optionalAuth, getHistory);
 
 // Delete History
 router.delete("/history/:id", protect, deleteHistory);
