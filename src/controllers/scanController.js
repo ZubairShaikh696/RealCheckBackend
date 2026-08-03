@@ -5,7 +5,9 @@ const Device = require("../models/Device");
 const ScanHistory = require("../models/ScanHistory");
 const { getImageBase64 } = require("../services/imageScan.service");
 const { normalizeUrl } = require("../utils/url.helper");
-
+const {
+  getVirusTotalReport,
+} = require("../services/virusTotal.service");
 // image scan
 const {
   getImageBuffer,
@@ -196,32 +198,22 @@ const scanUrl = async (req, res) => {
       // Cache expired
       // Continue to VirusTotal below
     }
-    // ==========================================
-    // VIRUSTOTAL SCAN
-    // ==========================================
+   // ==========================================
+// VIRUSTOTAL SCAN
+// ==========================================
 
-    const encodedUrl = Buffer.from(originalUrl).toString("base64");
-    const urlId = encodedUrl.replace(/=/g, "");
+const report = await getVirusTotalReport(originalUrl);
 
-    const response = await axios.get(
-      `https://www.virustotal.com/api/v3/urls/${urlId}`,
-      {
-        headers: {
-          "x-apikey": process.env.VIRUSTOTAL_API_KEY,
-        },
-        timeout: 15000,
-      },
-    );
+const stats =
+  report.data.attributes.last_analysis_stats;
 
-    const stats = response.data.data.attributes.last_analysis_stats;
+let result = "Safe";
 
-    let result = "Safe";
-
-    if (stats.malicious > 0) {
-      result = "Malicious";
-    } else if (stats.suspicious > 0) {
-      result = "Suspicious";
-    }
+if (stats.malicious > 0) {
+  result = "Malicious";
+} else if (stats.suspicious > 0) {
+  result = "Suspicious";
+}
 
     // ==========================================
     // UPSERT SCAN
@@ -237,13 +229,13 @@ const scanUrl = async (req, res) => {
 
         normalizedUrl,
 
-        scanId: response.data.data.id,
+        scanId: report.data.id,
 
         result,
 
         stats,
 
-        fullResponse: response.data,
+        fullResponse: report,
 
         lastScannedAt: new Date(),
 
@@ -301,46 +293,24 @@ const scanUrl = async (req, res) => {
       account,
     });
   } catch (error) {
-    console.log(error.response?.data || error.message);
 
-    // ==========================================
-    // VIRUSTOTAL ERRORS
-    // ==========================================
+  console.log("========== ERROR ==========");
+  console.log(error);
 
-    if (error.response) {
-      switch (error.response.status) {
-        case 401:
-          return res.status(500).json({
-            success: false,
-            message: "VirusTotal API key is invalid.",
-          });
+  console.log("Response:");
+  console.log(error.response?.data);
 
-        case 404:
-          return res.status(404).json({
-            success: false,
-            message: "URL not found on VirusTotal.",
-          });
+  console.log("Status:");
+  console.log(error.response?.status);
 
-        case 429:
-          return res.status(429).json({
-            success: false,
-            message: "VirusTotal rate limit exceeded.",
-          });
+  console.log("Message:");
+  console.log(error.message);
 
-        default:
-          return res.status(500).json({
-            success: false,
-            message: "VirusTotal request failed.",
-          });
-      }
-    }
-
-    return res.status(500).json({
-      success: false,
-
-      message: "Something went wrong.",
-    });
-  }
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+  });
+}
 };
 
 // image scan
