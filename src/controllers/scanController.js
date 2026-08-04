@@ -34,6 +34,7 @@ const saveHistory = async ({
   normalizedUrl,
   result,
 }) => {
+
   const query = user
     ? {
         user: user._id,
@@ -44,9 +45,10 @@ const saveHistory = async ({
         normalizedUrl,
       };
 
-  const history = await ScanHistory.findOne(query);
+  let history = await ScanHistory.findOne(query);
 
   if (history) {
+
     history.scan = scan._id;
     history.originalUrl = originalUrl;
     history.result = result;
@@ -55,10 +57,10 @@ const saveHistory = async ({
 
     await history.save();
 
-    return;
+    return history;
   }
 
-  await ScanHistory.create({
+  history = await ScanHistory.create({
     user: user ? user._id : null,
     device_id,
     scan: scan._id,
@@ -66,6 +68,8 @@ const saveHistory = async ({
     normalizedUrl,
     result,
   });
+
+  return history;
 };
 
 // =======================================================
@@ -172,27 +176,51 @@ const scanUrl = async (req, res) => {
       // Cache still valid
       if (!cacheExpired) {
         const account = await consumeCredit(req.user, device);
-        await saveHistory({
-          user: req.user,
-          device_id,
-          scan: existingScan,
-          originalUrl,
-          normalizedUrl,
-          result: existingScan.result,
-        });
+        // await saveHistory({
+        //   user: req.user,
+        //   device_id,
+        //   scan: existingScan,
+        //   originalUrl,
+        //   normalizedUrl,
+        //   result: existingScan.result,
+        // });
+const history = await saveHistory({
+  user: req.user,
+  device_id,
+  scan,
+  originalUrl,
+  normalizedUrl,
+  result,
+});
+        // return res.status(200).json({
+        //   success: true,
 
+        //   cached: true,
+
+        //   cacheExpired: false,
+
+        //   lastScannedAt: existingScan.lastScannedAt,
+
+        //   data: existingScan,
+        //   account,
+        // });
         return res.status(200).json({
-          success: true,
+    success: true,
 
-          cached: true,
+    cached: false,
 
-          cacheExpired: false,
+    cacheExpired: false,
 
-          lastScannedAt: existingScan.lastScannedAt,
+    lastScannedAt: scan.lastScannedAt,
 
-          data: existingScan,
-          account,
-        });
+    historyId: history._id,
+
+    isFavorite: history.isFavorite,
+
+    data: scan,
+
+    account,
+});
       }
 
       // Cache expired
@@ -434,22 +462,29 @@ const scanImage = async (req, res) => {
     // History
     //------------------------------------------------
 
-    await saveHistory({
+    // await saveHistory({
 
-      user: req.user,
+    //   user: req.user,
 
-      device_id,
+    //   device_id,
 
-      scan,
+    //   scan,
 
-      originalUrl: imageKey,
+    //   originalUrl: imageKey,
 
-      normalizedUrl: imageKey,
+    //   normalizedUrl: imageKey,
 
-      result: ai.result,
+    //   result: ai.result,
 
-    });
-
+    // });
+const history = await saveHistory({
+    user: req.user,
+    device_id,
+    scan,
+    originalUrl: imageKey,
+    normalizedUrl: imageKey,
+    result: ai.result,
+});
     //------------------------------------------------
     // Consume Credit
     //------------------------------------------------
@@ -461,22 +496,40 @@ const scanImage = async (req, res) => {
     // Response
     //------------------------------------------------
 
-    return res.json({
+    // return res.json({
 
-      success: true,
+    //   success: true,
 
-      cached: false,
+    //   cached: false,
 
-      cacheExpired: false,
+    //   cacheExpired: false,
 
-      lastScannedAt: scan.lastScannedAt,
+    //   lastScannedAt: scan.lastScannedAt,
 
-      data: scan,
+    //   data: scan,
 
-      account,
+    //   account,
 
-    });
+    // });
+return res.json({
 
+    success:true,
+
+    cached:false,
+
+    cacheExpired:false,
+
+    lastScannedAt:scan.lastScannedAt,
+
+    historyId: history._id,
+
+    isFavorite: history.isFavorite,
+
+    data:scan,
+
+    account,
+
+});
   }
 
   catch (err) {
@@ -752,7 +805,8 @@ const deleteHistory = async (req, res) => {
 const toggleFavorite = async (req, res) => {
   try {
 
-    const { historyId } = req.params;
+const { historyId } = req.params;
+const { scanId } = req.body;
 
     let query = {
       _id: historyId,
