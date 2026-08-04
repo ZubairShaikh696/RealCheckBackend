@@ -176,51 +176,24 @@ const scanUrl = async (req, res) => {
       // Cache still valid
       if (!cacheExpired) {
         const account = await consumeCredit(req.user, device);
-        // await saveHistory({
-        //   user: req.user,
-        //   device_id,
-        //   scan: existingScan,
-        //   originalUrl,
-        //   normalizedUrl,
-        //   result: existingScan.result,
-        // });
-const history = await saveHistory({
-  user: req.user,
-  device_id,
-  scan,
-  originalUrl,
-  normalizedUrl,
-  result,
-});
-        // return res.status(200).json({
-        //   success: true,
-
-        //   cached: true,
-
-        //   cacheExpired: false,
-
-        //   lastScannedAt: existingScan.lastScannedAt,
-
-        //   data: existingScan,
-        //   account,
-        // });
+        const history = await saveHistory({
+          user: req.user,
+          device_id,
+          scan: existingScan,
+          originalUrl,
+          normalizedUrl,
+          result: existingScan.result,
+        });
         return res.status(200).json({
-    success: true,
-
-    cached: false,
-
-    cacheExpired: false,
-
-    lastScannedAt: scan.lastScannedAt,
-
-    historyId: history._id,
-
-    isFavorite: history.isFavorite,
-
-    data: scan,
-
-    account,
-});
+          success: true,
+          cached: true,
+          cacheExpired: false,
+          lastScannedAt: existingScan.lastScannedAt,
+          historyId: history._id,
+          isFavorite: history.isFavorite,
+          data: existingScan,
+          account,
+        });
       }
 
       // Cache expired
@@ -283,7 +256,7 @@ if (stats.malicious > 0) {
     // SAVE HISTORY
     // ==========================================
 
-    await saveHistory({
+    const history = await saveHistory({
       user: req.user,
       device_id,
       scan,
@@ -317,6 +290,8 @@ if (stats.malicious > 0) {
       cached: false,
       cacheExpired: false,
       lastScannedAt: scan.lastScannedAt,
+      historyId: history._id,
+      isFavorite: history.isFavorite,
       data: scan,
       account,
     });
