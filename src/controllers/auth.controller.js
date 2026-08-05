@@ -33,13 +33,13 @@ exports.register = asyncHandler(async (req, res) => {
   });
 
   const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "7d",
   });
 
   const refreshToken = jwt.sign(
     { userId: user._id },
     process.env.REFRESH_SECRET,
-    { expiresIn: "7d" },
+    { expiresIn: "14d" },
   );
 
   // Save refresh token in DB
