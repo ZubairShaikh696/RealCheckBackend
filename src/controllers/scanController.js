@@ -781,7 +781,7 @@ const toggleFavorite = async (req, res) => {
   try {
 
 const { historyId } = req.params;
-const { scanId } = req.body;
+// const { scanId } = req.body;
 
     let query = {
       _id: historyId,
