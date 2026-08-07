@@ -97,13 +97,13 @@ exports.login = asyncHandler(async (req, res) => {
   }
 
   const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "7d",
   });
 
   const refreshToken = jwt.sign(
     { userId: user._id },
     process.env.REFRESH_SECRET,
-    { expiresIn: "7d" },
+    { expiresIn: "14d" },
   );
 
   // Save refresh token in DB
@@ -235,7 +235,7 @@ exports.googleLogin = asyncHandler(async (req, res) => {
 
     process.env.JWT_SECRET,
 
-    { expiresIn: "15m" },
+    { expiresIn: "7d" },
   );
 
   const refreshToken = jwt.sign(
@@ -243,7 +243,7 @@ exports.googleLogin = asyncHandler(async (req, res) => {
 
     process.env.REFRESH_SECRET,
 
-    { expiresIn: "7d" },
+    { expiresIn: "14d" },
   );
 
   user.refreshToken = refreshToken;
@@ -370,7 +370,7 @@ exports.refreshToken = asyncHandler(async (req, res) => {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: "15m",
+      expiresIn: "7d",
     },
   );
 
